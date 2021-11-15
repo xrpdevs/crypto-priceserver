@@ -51,7 +51,7 @@ func readConfig(confFile string) {
 
 	log.Println("Using configuration file: " + confFile)
 
-	dat, err := os.ReadFile(confFile)
+	dat, err := ioutil.ReadFile(confFile)
 	check(err)
 	//	fmt.Print(string(dat))
 
