@@ -26,7 +26,7 @@ Finally, add priceserver as a prometheus target, by adding the following to the 
 
 `      - targets: ['127.0.0.1:7071']`
 
-Target ip and port needs to be modified to match what you have in /etc/priceserver
+Target ip and port needs to be modified to match what you have in /etc/priceserver.yml
 
 (c) 2021 Jamie Prince / flareftso.com / xrpdevs.co.uk
 
