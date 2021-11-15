@@ -1,0 +1,27 @@
+[Unit]
+Description=priceserver service
+ConditionPathExists=/var/lib/priceserver/
+After=network.target
+
+[Service]
+Type=simple
+User=nobody
+Group=nogroup
+LimitNOFILE=1024
+
+Restart=on-failure
+RestartSec=10
+startLimitIntervalSec=60
+WorkingDirectory=/tmp
+ExecStart=/usr/local/bin/priceserver
+ExecReload=/bin/kill -9 -- $MAINPID && systemctl start priceserver.service
+ExecStop=/bin/kill -- $MAINPID
+TimeoutStopSec=5
+KillMode=process
+# make sure log directory exists and owned by syslog
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=priceserver
+
+[Install]
+WantedBy=multi-user.target
