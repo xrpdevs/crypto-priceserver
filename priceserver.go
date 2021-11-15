@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	_ "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,9 +16,7 @@ import (
 	"time"
 )
 
-
-
-func main(){
+func main() {
 	setupDB()
 
 	//readconfig() // get config file from /etc/cryptodatasource
@@ -25,20 +24,39 @@ func main(){
 	log.Println("Db setup done")
 	go ticker()
 	log.Println("ticker setup done")
-	http.HandleFunc("/" , handler)
+	http.HandleFunc("/", handler)
 	http.ListenAndServe("192.168.7.101:7071", nil)
 }
 
-func ticker(){
+func readConfig() {
+	defconfig := "/etc/priceserver.yml"
+	log.Println("Using configuration file: " + defconfig)
+
+}
+
+type scraperItem struct {
+	Url       string
+	Fallback  string
+	FieldName string
+	Frequency string
+}
+
+type generalConfig struct {
+	Serverip         string
+	Serverport       string
+	PrometheusPrefix string
+}
+
+func ticker() {
 	// for i in config coins {
 	ticker := time.NewTicker(15 * time.Second) // get the scrape frequency from the config file
 	quit := make(chan struct{})
 	go func() {
 		for {
 			select {
-			case <- ticker.C:
+			case <-ticker.C:
 				go priceTask() //pricetask(url, key)
-			case <- quit:
+			case <-quit:
 				ticker.Stop()
 				return
 			}
@@ -47,9 +65,9 @@ func ticker(){
 	// } end for i
 }
 
-func priceTask(){
+func priceTask() {
 	// run every 15 seconds
-//	timer := 15000
+	//	timer := 15000
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -74,7 +92,7 @@ func priceTask(){
 		log.Println(err)
 	}
 	query := "INSERT INTO PRICES (`id`, `coin`, `price`, `ts`) VALUES " +
-		"( null, '"+record.Symbol+"', '"+record.Price+"', '"+now+"');"
+		"( null, '" + record.Symbol + "', '" + record.Price + "', '" + now + "');"
 	log.Println(query)
 	_, err = db.Exec(query)
 	if err != nil {
@@ -85,9 +103,9 @@ func priceTask(){
 
 type PriceResponse struct {
 	Symbol string
-	Price string
-	Ts string
-	Id string
+	Price  string
+	Ts     string
+	Id     string
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -109,15 +127,15 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		res.Close()
 	}
-//	output := "[{\"target\":\""+record.Symbol+"\",\"datapoints\":[[\""+record.Price+"\",\""+now+"\"]]}]"
-	output := "priceserver_price{id=\""+record.Symbol+"\"} "+record.Price+"\n"
+	//	output := "[{\"target\":\""+record.Symbol+"\",\"datapoints\":[[\""+record.Price+"\",\""+now+"\"]]}]"
+	output := "priceserver_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
 	//	io.Copy(buf, response.Body)
 
-	log.Printf("Output: "+output)
+	log.Printf("Output: " + output)
 
-	fmt.Fprintf(w, output )
+	fmt.Fprintf(w, output)
 }
-func setupDB(){
+func setupDB() {
 	os.MkdirAll("./db", 0755)
 	if _, err := os.Stat("./db/data.db"); errors.Is(err, os.ErrNotExist) {
 		os.Create("./db/data.db")
