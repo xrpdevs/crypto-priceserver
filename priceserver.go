@@ -38,7 +38,7 @@ func main() {
 	go ticker()
 	log.Println("ticker setup done")
 	http.HandleFunc("/", handler)
-	http.ListenAndServe("192.168.7.101:7071", nil)
+	http.ListenAndServe(config.Serverip+":"+strconv.Itoa(config.ServerPort), nil)
 }
 
 func check(err error) {
