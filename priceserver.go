@@ -64,53 +64,46 @@ func readConfig(confFile string) {
 
 }
 
-type scraperItem struct {
-	PairName       string `yaml:"PairName"`
-	URL            string `yaml:"Url"`
-	ScrapeInterval int    `yaml:"ScrapeInterval"`
-	JSONKey        string `yaml:"JsonKey"`
-	FallbackURL    string `yaml:"FallbackUrl"`
-	FallbackKey    string `yaml:"FallbackKey"`
-}
-
-type generalConfig struct {
-	Serverip        string `yaml:"serverip"`
-	ServerPort      int    `yaml:"ServerPort"`
-	DefaultInterval int    `yaml:"DefaultInterval"`
-	PromPrefix      string `yaml:"PromPrefix"`
-	DbPath          string
-	Items           []scraperItem `yaml:"Items"`
+func schedule(a string, b string, c string, d string, interval time.Duration, done <-chan bool) *time.Ticker {
+	log.Println(interval)
+	ticker := time.NewTicker(interval)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				priceTask(a, b, c, d)
+			case <-done:
+				return
+			}
+		}
+	}()
+	return ticker
 }
 
 func ticker() {
-	for _, v := range config.Items {
-		var interval time.Duration
-		if v.ScrapeInterval > 0 {
-			interval = time.Duration(v.ScrapeInterval)
-		} else {
-			interval = time.Duration(config.DefaultInterval)
-		}
-		// for i in config coins {
-		ticker := time.NewTicker(interval * time.Second) // get the scrape frequency from the config file
-		quit := make(chan struct{})
-		go func() {
-			for {
-				select {
-				case <-ticker.C:
-					//	go priceTask(url) //
-					priceTask(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey)
 
-				case <-quit:
-					ticker.Stop()
-					return
-				}
-			}
-		}()
+	//	 pairsLen := len(config.Items)+1
+
+	//	var tickers = make([]bgTasks, pairsLen)
+	//	tickerCount := 0
+
+	for _, v := range config.Items {
+		//	tickerCount++
+		//	tickers[tickerCount].Funct = func(){}
+		//	tickers[tickerCount].Interval = v.ScrapeInterval
+
+		done := make(chan bool)
+		schedule(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey, time.Duration(v.ScrapeInterval)*time.Second, done)
 	}
 }
 
-func priceTask(url string, key string, fburl string, fbkey string) {
+//type bgTasks struct {
+//	Funct    func()
+//	Interval int
+//}
 
+func priceTask(url string, key string, fburl string, fbkey string) {
+	//log.Println(url)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
@@ -139,14 +132,7 @@ func priceTask(url string, key string, fburl string, fbkey string) {
 	if err != nil {
 		log.Println(err)
 	}
-
-}
-
-type PriceResponse struct {
-	Symbol string
-	Price  string
-	Ts     string
-	Id     string
+	return
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
@@ -173,10 +159,11 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		output += config.PromPrefix + "_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
 	}
 
-	log.Printf("Output: " + output)
+	log.Printf("Output: \n" + output)
 
 	fmt.Fprintf(w, output)
 }
+
 func setupDB(dbVar string) {
 	os.MkdirAll(dbVar, 0755)
 	if _, err := os.Stat(dbVar + "/data.db"); errors.Is(err, os.ErrNotExist) {
@@ -206,4 +193,29 @@ func setupDB(dbVar string) {
 	}
 	db.Close()
 
+}
+
+type PriceResponse struct {
+	Symbol string
+	Price  string
+	Ts     string
+	Id     string
+}
+
+type scraperItem struct {
+	PairName       string `yaml:"PairName"`
+	URL            string `yaml:"Url"`
+	ScrapeInterval int    `yaml:"ScrapeInterval"`
+	JSONKey        string `yaml:"JsonKey"`
+	FallbackURL    string `yaml:"FallbackUrl"`
+	FallbackKey    string `yaml:"FallbackKey"`
+}
+
+type generalConfig struct {
+	Serverip        string `yaml:"serverip"`
+	ServerPort      int    `yaml:"ServerPort"`
+	DefaultInterval int    `yaml:"DefaultInterval"`
+	PromPrefix      string `yaml:"PromPrefix"`
+	DbPath          string
+	Items           []scraperItem `yaml:"Items"`
 }
