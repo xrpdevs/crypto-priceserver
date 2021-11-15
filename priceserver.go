@@ -29,8 +29,8 @@ func main() {
 	flag.Parse()
 	fmt.Println("config file:", conf)
 	fmt.Println("db path:", dbvar)
-	//	fmt.Println("tail:", flag.Args())
-	readConfig(conf) // get config file from /etc/cryptodatasource
+
+	readConfig(conf) //
 	dbPath = dbvar
 	setupDB(dbvar)
 
@@ -159,17 +159,19 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Println(err)
 	}
-	query := "select * from PRICES where `coin` = 'SGBUSDT' order by `ts` desc limit 1"
-	res, _ := db.Query(query)
-	if res.Next() {
-		err := res.Scan(&record.Id, &record.Symbol, &record.Price, &record.Ts)
-		if err != nil {
-			log.Println(err)
+	var output string
+	for _, v := range config.Items {
+		query := "select * from PRICES where `coin` = '" + v.PairName + "' order by `ts` desc limit 1"
+		res, _ := db.Query(query)
+		if res.Next() {
+			err := res.Scan(&record.Id, &record.Symbol, &record.Price, &record.Ts)
+			if err != nil {
+				log.Println(err)
+			}
+			res.Close()
 		}
-		res.Close()
+		output += config.PromPrefix + "_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
 	}
-
-	output := config.PromPrefix + "_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
 
 	log.Printf("Output: " + output)
 
