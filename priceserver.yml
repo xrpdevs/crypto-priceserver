@@ -1,6 +1,6 @@
 #Sample config for priceserver
 
-serverip: 192.168.7.101    # Change this if you need to access this datasource from another machine
+serverip: 127.0.0.1        # Change this if you need to access this datasource from another machine
 ServerPort: 7071           # Change this if you already have another service running on the same port
 DefaultInterval: 30        # Update every 30 seconds
 PromPrefix: priceserver    # this is what will appear in the query browser in grafana or prometheus
