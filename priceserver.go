@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"database/sql"
 	"encoding/json"
-	"errors"
 	"flag"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
@@ -166,7 +165,8 @@ func handler(w http.ResponseWriter, r *http.Request) {
 
 func setupDB(dbVar string) {
 	os.MkdirAll(dbVar, 0755)
-	if _, err := os.Stat(dbVar + "/data.db"); errors.Is(err, os.ErrNotExist) {
+	_, err := os.Stat(dbVar + "/data.db")
+	if os.IsNotExist(err) {
 		os.Create(dbVar + "/data.db")
 	}
 
