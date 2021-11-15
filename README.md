@@ -1,4 +1,4 @@
-# **priceserver v0.1**
+# **priceserver v0.2**
 
 Simple price scraper with HTTP server for use with prometheus
 
