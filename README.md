@@ -2,7 +2,7 @@
 
 Simple price scraper with HTTP server for use with prometheus
 
-Currently supporting SGB, more flexibility to be added in the near future
+Currently working with Bitrue.com exchange but easily adaptable to others.
 
 **Configuration:**
 
@@ -10,7 +10,9 @@ Currently supporting SGB, more flexibility to be added in the near future
 
 `make install`
 
-You then need to edit /etc/priceserver.conf - examples are provided inside the file.
+This will build and install the application to the system, along with the included default config files.
+
+You may then need to edit /etc/priceserver.yml - examples are provided inside the file.
 
 Finally, add priceserver as a prometheus target, by adding the following to the bottom of /etc/prometheus/prometheus.yml
 
@@ -22,10 +24,10 @@ Finally, add priceserver as a prometheus target, by adding the following to the 
 
 `    static_configs:`
 
-`      - targets: ['192.168.7.101:7071']`
+`      - targets: ['127.0.0.1:7071']`
 
-Target needs to be modified to match what you have in /etc/priceserver
+Target ip and port needs to be modified to match what you have in /etc/priceserver
 
-(c) 2021 Jamie Prince / flareftso.com / xrpdevs
+(c) 2021 Jamie Prince / flareftso.com / xrpdevs.co.uk
 
 GPLv2 license

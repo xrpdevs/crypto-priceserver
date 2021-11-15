@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"flag"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
+	"gopkg.in/yaml.v2"
 	_ "gopkg.in/yaml.v2"
 	"io/ioutil"
 	"log"
@@ -16,10 +18,21 @@ import (
 	"time"
 )
 
-func main() {
-	setupDB()
+var config generalConfig
+var dbPath string
 
-	//readconfig() // get config file from /etc/cryptodatasource
+func main() {
+	var dbvar string
+	flag.StringVar(&dbvar, "d", "/var/lib/priceserver/", "Location of sqlite3 database")
+	var conf string
+	flag.StringVar(&conf, "c", "/etc/priceserver.yml", "Location of configureation file")
+	flag.Parse()
+	fmt.Println("config file:", conf)
+	fmt.Println("db path:", dbvar)
+	//	fmt.Println("tail:", flag.Args())
+	readConfig(conf) // get config file from /etc/cryptodatasource
+	dbPath = dbvar
+	setupDB(dbvar)
 
 	log.Println("Db setup done")
 	go ticker()
@@ -28,54 +41,82 @@ func main() {
 	http.ListenAndServe("192.168.7.101:7071", nil)
 }
 
-func readConfig() {
-	defconfig := "/etc/priceserver.yml"
-	log.Println("Using configuration file: " + defconfig)
+func check(err error) {
+	if err != nil {
+		log.Fatalf("error: %v", err)
+	}
+}
+
+func readConfig(confFile string) {
+
+	log.Println("Using configuration file: " + confFile)
+
+	dat, err := os.ReadFile(confFile)
+	check(err)
+	//	fmt.Print(string(dat))
+
+	t := generalConfig{}
+	err = yaml.Unmarshal([]byte(dat), &t)
+
+	config = t
+	//	meh, _ := json.Marshal(t)
+	//	log.Println(string(meh))	// dump data structure as JSON for debugging
 
 }
 
 type scraperItem struct {
-	Url       string
-	Fallback  string
-	FieldName string
-	Frequency string
+	PairName       string `yaml:"PairName"`
+	URL            string `yaml:"Url"`
+	ScrapeInterval int    `yaml:"ScrapeInterval"`
+	JSONKey        string `yaml:"JsonKey"`
+	FallbackURL    string `yaml:"FallbackUrl"`
+	FallbackKey    string `yaml:"FallbackKey"`
 }
 
 type generalConfig struct {
-	Serverip         string
-	Serverport       string
-	PrometheusPrefix string
+	Serverip        string `yaml:"serverip"`
+	ServerPort      int    `yaml:"ServerPort"`
+	DefaultInterval int    `yaml:"DefaultInterval"`
+	PromPrefix      string `yaml:"PromPrefix"`
+	DbPath          string
+	Items           []scraperItem `yaml:"Items"`
 }
 
 func ticker() {
-	// for i in config coins {
-	ticker := time.NewTicker(15 * time.Second) // get the scrape frequency from the config file
-	quit := make(chan struct{})
-	go func() {
-		for {
-			select {
-			case <-ticker.C:
-				go priceTask() //pricetask(url, key)
-			case <-quit:
-				ticker.Stop()
-				return
-			}
+	for _, v := range config.Items {
+		var interval time.Duration
+		if v.ScrapeInterval > 0 {
+			interval = time.Duration(v.ScrapeInterval)
+		} else {
+			interval = time.Duration(config.DefaultInterval)
 		}
-	}()
-	// } end for i
+		// for i in config coins {
+		ticker := time.NewTicker(interval * time.Second) // get the scrape frequency from the config file
+		quit := make(chan struct{})
+		go func() {
+			for {
+				select {
+				case <-ticker.C:
+					//	go priceTask(url) //
+					priceTask(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey)
+
+				case <-quit:
+					ticker.Stop()
+					return
+				}
+			}
+		}()
+	}
 }
 
-func priceTask() {
-	// run every 15 seconds
-	//	timer := 15000
+func priceTask(url string, key string, fburl string, fbkey string) {
+
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	// array of coins to fetch here, then loop
-
 	client := &http.Client{Transport: tr}
-	response, err := client.Get("https://www.bitrue.com/api/v1/ticker/price?symbol=SGBUSDT")
+	response, err := client.Get(url)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -87,7 +128,7 @@ func priceTask() {
 	}
 	now := strconv.FormatInt(time.Now().Unix(), 10)
 
-	db, err := sql.Open("sqlite3", "./db/data.db")
+	db, err := sql.Open("sqlite3", dbPath+"/data.db")
 	if err != nil {
 		log.Println(err)
 	}
@@ -114,7 +155,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 	record := PriceResponse{}
 	log.Printf(r.RequestURI)
-	db, err := sql.Open("sqlite3", "./db/data.db")
+	db, err := sql.Open("sqlite3", dbPath+"/data.db")
 	if err != nil {
 		log.Println(err)
 	}
@@ -127,18 +168,17 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 		res.Close()
 	}
-	//	output := "[{\"target\":\""+record.Symbol+"\",\"datapoints\":[[\""+record.Price+"\",\""+now+"\"]]}]"
-	output := "priceserver_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
-	//	io.Copy(buf, response.Body)
+
+	output := config.PromPrefix + "_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
 
 	log.Printf("Output: " + output)
 
 	fmt.Fprintf(w, output)
 }
-func setupDB() {
-	os.MkdirAll("./db", 0755)
-	if _, err := os.Stat("./db/data.db"); errors.Is(err, os.ErrNotExist) {
-		os.Create("./db/data.db")
+func setupDB(dbVar string) {
+	os.MkdirAll(dbVar, 0755)
+	if _, err := os.Stat(dbVar + "/data.db"); errors.Is(err, os.ErrNotExist) {
+		os.Create(dbVar + "/data.db")
 	}
 
 	db, err := sql.Open("sqlite3", "./db/data.db")

@@ -1,0 +1,29 @@
+#Sample config for priceserver
+
+serverip: 192.168.7.101    # Change this if you need to access this datasource from another machine
+ServerPort: 7071           # Change this if you already have another service running on the same port
+DefaultInterval: 30        # Update every 30 seconds
+PromPrefix: priceserver    # this is what will appear in the query browser in grafana or prometheus
+
+Items:
+
+- PairName: 'SGBUSDT'
+  Url: 'https://www.bitrue.com/api/v1/ticker/price?symbol=SGBUSDT'
+  ScrapeInterval: 30       # get price every N seconds, if not defined, we use DefaultInterval
+  JsonKey: 'price'         # the key to extract from the JSON response from the exchange
+  FallbackUrl:             # if URL is unavailable, try fallback_url
+  FallbackKey:             # same as above but for key
+
+- PairName: 'XRPUSDT'
+  Url: 'https://www.bitrue.com/api/v1/ticker/price?symbol=XRPUSDT'
+  ScrapeInterval: 30       # get price every N seconds, if not defined, we use the default_scrape_timer
+  JsonKey: 'price'         # the key to extract from the JSON response from the exchange
+  FallbackUrl:             # if URL is unavailable, try fallback_url
+  FallbackKey:             # same as above but for key
+
+#  - pair_name: 'BTCUSDT'
+#    url: 'https://www.bitrue.com/api/v1/ticker/price?symbol=BTCUSDT'
+#    scrape_frequency: 5s      # if not defined, we use the default_scrape_timer
+#    json_key: "price"         # the key to extract from the JSON response from the exchange
+#    fallback_url:             # if URL is unavailable, try fallback_url
+#    fallback_key:             # same as above but for key
