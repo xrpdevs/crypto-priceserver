@@ -18,9 +18,9 @@ Finally, add priceserver as a prometheus target, by adding the following to the 
 
 ` - job_name: 'priceserver'`
 
-`scrape_interval: 10s`
+`scrape_interval: 60s`
 
-`scrape_timeout: 9s`
+`scrape_timeout: 15s`
 
 `    static_configs:`
 
