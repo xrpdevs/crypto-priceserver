@@ -17,7 +17,8 @@ run:
 	go run priceserver.go --config=./priceserver.yml --dbfile=./db/data.db
 
 .ONESHELL:
-install: 
+install:
+	sudo su
 	echo "Creating /var/lib/priceserver/ for sqlite3 database"; \
 	mkdir /var/lib/priceserver/ ; \
 	chown nobody:nogroup /var/lib/priceserver -R
@@ -25,5 +26,6 @@ install:
 	cp ./priceserver.yml /etc/ ; \
 	cp ./priceserver /usr/local/bin/priceserver ; \
 	cp ./priceserver.service /etc/systemd/system/ ;\
+	systemctl daemon-reload
 	echo "All done!"
-
+	exit
