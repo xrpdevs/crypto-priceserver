@@ -15,7 +15,7 @@ default:
 
 
 run:
-	go run priceserver.go -c ./priceserver.yml -d ./db/data.db
+	go run priceserver.go -c ./priceserver.yml -d ./db
 
 .ONESHELL:
 install:
