@@ -1,6 +1,6 @@
-# **priceserver v0.2**
+# **priceserver v0.3**
 
-Simple price scraper with HTTP server for use with prometheus
+Simple price scraper with HTTP server/exporter for use with Prometheus
 
 Currently working with Bitrue.com exchange but easily adaptable to others.
 
@@ -14,19 +14,9 @@ This will build and install the application to the system, along with the includ
 
 You may then need to edit /etc/priceserver.yml - examples are provided inside the file.
 
-Finally, add priceserver as a prometheus target, by adding the following to the bottom of /etc/prometheus/prometheus.yml
+Finally, add priceserver as a prometheus target, by adding the the contents of "add_to_prometheus.yml" to the end of /etc/prometheus/prometheus.yml
 
-` - job_name: 'priceserver'`
-
-`scrape_interval: 60s`
-
-`scrape_timeout: 15s`
-
-`    static_configs:`
-
-`      - targets: ['127.0.0.1:7071']`
-
-Target ip and port needs to be modified to match what you have in /etc/priceserver.yml
+Target IP address and port need to be modified to match what you have in /etc/priceserver.yml - usually the defaults will work just fine as long as you're running this exporter and prometheus on the same machine.
 
 (c) 2021 Jamie Prince / flareftso.com / xrpdevs.co.uk
 
