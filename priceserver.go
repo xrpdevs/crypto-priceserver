@@ -34,10 +34,12 @@ func main() {
 	setupDB(dbvar)
 
 	log.Println("Db setup done")
-	go ticker()
-	log.Println("ticker setup done")
+	go startTickers()
+	log.Println("startTickers setup done")
 	http.HandleFunc("/", handler)
-	http.ListenAndServe(config.Serverip+":"+strconv.Itoa(config.ServerPort), nil)
+	err := http.ListenAndServe(config.Serverip+":"+strconv.Itoa(config.ServerPort), nil)
+	check(err)
+
 }
 
 func check(err error) {
@@ -56,7 +58,7 @@ func readConfig(confFile string) {
 
 	t := generalConfig{}
 	err = yaml.Unmarshal([]byte(dat), &t)
-
+	check(err)
 	config = t
 	//	meh, _ := json.Marshal(t)
 	//	log.Println(string(meh))	// dump data structure as JSON for debugging
@@ -79,18 +81,8 @@ func schedule(a string, b string, c string, d string, interval time.Duration, do
 	return ticker
 }
 
-func ticker() {
-
-	//	 pairsLen := len(config.Items)+1
-
-	//	var tickers = make([]bgTasks, pairsLen)
-	//	tickerCount := 0
-
+func startTickers() {
 	for _, v := range config.Items {
-		//	tickerCount++
-		//	tickers[tickerCount].Funct = func(){}
-		//	tickers[tickerCount].Interval = v.ScrapeInterval
-
 		done := make(chan bool)
 		schedule(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey, time.Duration(v.ScrapeInterval)*time.Second, done)
 	}
@@ -109,28 +101,21 @@ func priceTask(url string, key string, fburl string, fbkey string) {
 
 	client := &http.Client{Transport: tr}
 	response, err := client.Get(url)
-	if err != nil {
-		fmt.Println(err)
-	}
+	check(err)
 	body, err := ioutil.ReadAll(response.Body)
 	record := PriceResponse{}
 	err = json.Unmarshal(body, &record)
-	if err != nil {
-		fmt.Println(err)
-	}
+	check(err)
 	now := strconv.FormatInt(time.Now().Unix(), 10)
 
 	db, err := sql.Open("sqlite3", dbPath+"/data.db")
-	if err != nil {
-		log.Println(err)
-	}
+	check(err)
 	query := "INSERT INTO PRICES (`id`, `coin`, `price`, `ts`) VALUES " +
 		"( null, '" + record.Symbol + "', '" + record.Price + "', '" + now + "');"
 	log.Println(query)
 	_, err = db.Exec(query)
-	if err != nil {
-		log.Println(err)
-	}
+	check(err)
+
 	return
 }
 
@@ -141,39 +126,43 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	record := PriceResponse{}
 	log.Printf(r.RequestURI)
 	db, err := sql.Open("sqlite3", dbPath+"/data.db")
-	if err != nil {
-		log.Println(err)
-	}
+	check(err)
+
 	var output string
 	for _, v := range config.Items {
 		query := "select * from PRICES where `coin` = '" + v.PairName + "' order by `ts` desc limit 1"
 		res, _ := db.Query(query)
 		if res.Next() {
 			err := res.Scan(&record.Id, &record.Symbol, &record.Price, &record.Ts)
-			if err != nil {
-				log.Println(err)
-			}
-			res.Close()
+			check(err)
+
+			err = res.Close()
+			check(err)
+
 		}
 		output += config.PromPrefix + "_price{id=\"" + record.Symbol + "\"} " + record.Price + "\n"
 	}
 
 	log.Printf("Output: \n" + output)
 
-	fmt.Fprintf(w, output)
+	_, err = fmt.Fprintf(w, output)
+	check(err)
+
 }
 
 func setupDB(dbVar string) {
-	os.MkdirAll(dbVar, 0755)
-	_, err := os.Stat(dbVar + "/data.db")
+	err := os.MkdirAll(dbVar, 0755)
+	check(err)
+
+	_, err = os.Stat(dbVar + "/data.db")
 	if os.IsNotExist(err) {
-		os.Create(dbVar + "/data.db")
+		_, err := os.Create(dbVar + "/data.db")
+		check(err)
+
 	}
 
-	db, err := sql.Open("sqlite3", dbPath+"/data.db")
-	if err != nil {
-		log.Println(err)
-	}
+	db, err := sql.Open("sqlite3", dbVar+"/data.db")
+	check(err)
 
 	createTable := "CREATE TABLE IF NOT EXISTS PRICES (" +
 		"`id` INTEGER PRIMARY KEY AUTOINCREMENT, " +
