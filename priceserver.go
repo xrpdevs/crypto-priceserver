@@ -85,6 +85,7 @@ func startTickers() {
 	for _, v := range config.Items {
 		done := make(chan bool)
 		schedule(v.URL /*v.JSONKey, v.FallbackURL, v.FallbackKey,*/, time.Duration(v.ScrapeInterval)*time.Second, done, v.PairName)
+		priceTask(v.URL) // run once at app startup time so we always have at least one data point
 	}
 }
 
