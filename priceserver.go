@@ -65,8 +65,8 @@ func readConfig(confFile string) {
 
 }
 
-func schedule(a string, b string, c string, d string, interval time.Duration, done <-chan bool) *time.Ticker {
-	log.Println(interval)
+func schedule(a string, b string, c string, d string, interval time.Duration, done <-chan bool, pairInfo string) *time.Ticker {
+	log.Println("Checking " + pairInfo + " every " + strconv.FormatInt(int64(interval), 10))
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
@@ -84,7 +84,7 @@ func schedule(a string, b string, c string, d string, interval time.Duration, do
 func startTickers() {
 	for _, v := range config.Items {
 		done := make(chan bool)
-		schedule(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey, time.Duration(v.ScrapeInterval)*time.Second, done)
+		schedule(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey, time.Duration(v.ScrapeInterval)*time.Second, done, v.PairName)
 	}
 }
 
