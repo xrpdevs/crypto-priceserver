@@ -66,7 +66,7 @@ func readConfig(confFile string) {
 }
 
 func schedule(a string, b string, c string, d string, interval time.Duration, done <-chan bool, pairInfo string) *time.Ticker {
-	log.Println("Checking " + pairInfo + " every " + strconv.FormatInt(int64(interval), 10))
+	log.Println("Checking " + pairInfo + " every " + strconv.FormatInt(int64(interval/1000/1000), 10) + "s")
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
