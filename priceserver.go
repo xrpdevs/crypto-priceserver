@@ -26,8 +26,8 @@ func main() {
 	var conf string
 	flag.StringVar(&conf, "c", "/etc/priceserver.yml", "Location of configureation file")
 	flag.Parse()
-	fmt.Println("config file:", conf)
-	fmt.Println("db path:", dbvar)
+	log.Println("config file:", conf)
+	log.Println("db path:", dbvar+"/data.db")
 
 	readConfig(conf) //
 	dbPath = dbvar
@@ -52,12 +52,12 @@ func readConfig(confFile string) {
 
 	log.Println("Using configuration file: " + confFile)
 
-	dat, err := ioutil.ReadFile(confFile)
+	var dat, err = ioutil.ReadFile(confFile)
 	check(err)
 	//	fmt.Print(string(dat))
 
 	t := generalConfig{}
-	err = yaml.Unmarshal([]byte(dat), &t)
+	err = yaml.Unmarshal(dat, &t)
 	check(err)
 	config = t
 	//	meh, _ := json.Marshal(t)
@@ -65,14 +65,14 @@ func readConfig(confFile string) {
 
 }
 
-func schedule(a string, b string, c string, d string, interval time.Duration, done <-chan bool, pairInfo string) *time.Ticker {
+func schedule(a string /*, b string, c string, d string*/, interval time.Duration, done <-chan bool, pairInfo string) *time.Ticker {
 	log.Println("Checking " + pairInfo + " every " + strconv.FormatInt(int64(interval/1000/1000/1000), 10) + "s")
 	ticker := time.NewTicker(interval)
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
-				priceTask(a, b, c, d)
+				priceTask(a /*, b, c, d*/)
 			case <-done:
 				return
 			}
@@ -84,7 +84,7 @@ func schedule(a string, b string, c string, d string, interval time.Duration, do
 func startTickers() {
 	for _, v := range config.Items {
 		done := make(chan bool)
-		schedule(v.URL, v.JSONKey, v.FallbackURL, v.FallbackKey, time.Duration(v.ScrapeInterval)*time.Second, done, v.PairName)
+		schedule(v.URL /*v.JSONKey, v.FallbackURL, v.FallbackKey,*/, time.Duration(v.ScrapeInterval)*time.Second, done, v.PairName)
 	}
 }
 
@@ -93,7 +93,7 @@ func startTickers() {
 //	Interval int
 //}
 
-func priceTask(url string, key string, fburl string, fbkey string) {
+func priceTask(url string /*, key string, fburl string, fbkey string*/) {
 	//log.Println(url)
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
