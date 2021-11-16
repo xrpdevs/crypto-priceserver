@@ -1,8 +1,11 @@
-### Add this to the end of /etc/prometheus/prometheus.yml to enable priceserver as a target
+###
+###  Add this to the end of /etc/prometheus/prometheus.yml to enable priceserver as a target
+###
+###  NOTE: Make sure the whitespace lines up with the other 'job_name' entries otherwise prometheus won't start.
+###
+  - job_name: 'priceserver'
+    scrape_interval: 30s
+    scrape_timeout: 10s
 
-- job_name: 'priceserver'
-  scrape_interval: 30s
-  scrape_timeout: 10s
-
-  static_configs:
-    - targets: ['127.0.0.1:7071']    ## change this and the priceserver.yml if you need to
+    static_configs:
+      - targets: ['127.0.0.1:7071']    ## change this and the priceserver.yml if you need to
