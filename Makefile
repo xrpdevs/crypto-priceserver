@@ -20,6 +20,10 @@ run:
 install: 
 	echo "Creating /var/lib/priceserver/ for sqlite3 database"; \
 	mkdir /var/lib/priceserver/ ; \
+	chown nobody:nogroup /var/lib/priceserver -R
 	echo "Copying priceserver to /use/local/bin/" ; \
+	cp ./priceserver.yml /etc/ ; \
 	cp ./priceserver /usr/local/bin/priceserver ; \
+	cp ./priceserver.service /etc/systemd/system/ ;\
 	echo "All done!"
+
