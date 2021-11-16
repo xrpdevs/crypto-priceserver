@@ -170,12 +170,12 @@ func setupDB(dbVar string) {
 		os.Create(dbVar + "/data.db")
 	}
 
-	db, err := sql.Open("sqlite3", "./db/data.db")
+	db, err := sql.Open("sqlite3", dbPath+"/data.db")
 	if err != nil {
 		log.Println(err)
 	}
 
-	createTable := "CREATE TABLE IF NOT EXISTS PRICES(" +
+	createTable := "CREATE TABLE IF NOT EXISTS PRICES (" +
 		"`id` INTEGER PRIMARY KEY AUTOINCREMENT, " +
 		"`coin` STRING NOT NULL, " +
 		"`price` REAL NOT NULL, " +
@@ -191,7 +191,7 @@ func setupDB(dbVar string) {
 	if err != nil {
 		log.Println(err)
 	}
-	db.Close()
+	//	db.Close()
 
 }
 
